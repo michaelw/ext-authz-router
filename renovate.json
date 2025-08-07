@@ -1,0 +1,26 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "enabled": true
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "enabled": true
+    },
+    {
+      "matchManagers": [
+        "pre-commit"
+      ],
+      "enabled": true
+    }
+  ]
+}

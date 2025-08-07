@@ -1,0 +1,62 @@
+# Ignore Maven build output
+**/target/
+
+# Ignore logs
+*.log
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE files
+.idea/
+*.iml
+.vscode/
+/.devcontainer/
+
+# Ignore test reports
+**/test-classes/
+
+# Ignore secrets and environment files
+*.env
+
+# Ignore Docker files not needed in image
+.dockerignore
+Dockerfile*
+docker-compose*.yml
+/.devspace/
+tmp/
+
+# Ignore git files
+.git/
+.gitignore
+.gitmodules
+
+# Ignore build files
+.air.toml
+.copier.answers
+.trivyignore
+.trufflehogignore
+.truffleignore
+.pre-commit-config.yaml
+/.github/
+/charts/
+/docs/
+README.md
+renovate.json*
+
+# Ignore go build files
+*.exe
+*.out
+*.test
+*.prof
+/vendor/
+
+# Ignore images and debug files
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# Ignore root-level target
+/target/

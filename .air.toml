@@ -1,0 +1,9 @@
+[build]
+  cmd = "go build -v -gcflags=all='-N -l' ./cmd/..."
+  bin = "./ext-authz-router-service"
+  # full_bin = "dlv exec ./ext-authz-router-service --headless --continue --log --listen=:2345 --api-version=2 --accept-multiclient"
+  include_ext = ["go", "tpl", "tmpl", "html"]
+  excludeDir = ["tmp", "vendor"]
+
+[log]
+  time = true

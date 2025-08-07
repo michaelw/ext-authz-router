@@ -1,0 +1,10 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_src_path: https://github.com/michaelw/template-go-api-service
+api_resource: Namespaces
+dev_registry: ghcr.io/michaelw
+github_org: michaelw
+go_module: github.com/michaelw/ext-authz-router
+project_description: Envoy Ext AuthZ Plugin for header-based routing to environments
+project_name: Ext AuthZ Routing Plugin
+project_slug: ext-authz-router
+registry: ghcr.io/michaelw

@@ -1,0 +1,6 @@
+dependencies:
+- name: component-chart
+  repository: https://charts.devspace.sh
+  version: 0.9.1
+digest: sha256:76bde6fd6c1c0c26aa1794a6965a91c046b1e0972a69e88dbd515194a7d12f9e
+generated: "2025-07-13T21:51:30.667466-05:00"

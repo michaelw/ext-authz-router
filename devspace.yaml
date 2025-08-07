@@ -1,0 +1,236 @@
+version: v2beta1
+name: ext-authz-router
+
+# Variables for configuration
+vars:
+  DEVSPACE_USER: $(tr -d '._' <<< ${USER:-$(whoami)})
+  CONTAINER_USER_HOME: /home/gouser
+  REGISTRY:
+    value: "ghcr.io/michaelw"
+  DEV_REGISTRY:
+    value: "ghcr.io/michaelw"
+  IMAGE_NAME:
+    value: "ext-authz-router-api"
+  DEV_TAG:
+    value: "dev-${DEVSPACE_USER}-${DEVSPACE_TIMESTAMP}"
+  PROD_TAG:
+    value: "latest" # XXX versioning scheme for production images
+
+# Images to build and push
+images:
+  # Development image - not pushed to production registry
+  dev:
+    image: ${DEV_REGISTRY}/${IMAGE_NAME}
+    dockerfile: ./Dockerfile
+    target: dev
+    docker: &docker
+      args:
+        - "--platform=linux/amd64" # Ensure compatibility with local dev environment
+    tags:
+      - ${DEV_TAG}
+      - dev
+    buildArgs:
+      WORKSPACE: /workspace
+
+    skipPush: true # Never push dev images to registry
+
+  # Production image - for deployment and dependencies
+  prod:
+    image: ${REGISTRY}/${IMAGE_NAME}
+    dockerfile: ./Dockerfile
+    target: prod
+    docker: *docker
+    tags:
+      - ${PROD_TAG}
+      - "${DEVSPACE_GIT_COMMIT}"
+    buildArgs:
+      WORKSPACE: /workspace
+    # This will be pushed to registry for others to use
+
+# Deployments - Kubernetes manifests
+deployments:
+  ext-authz-router:
+    helm:
+      # https://www.devspace.sh/component-chart/docs/
+      chart:
+        name: ./charts/ext-authz-router
+
+# Development configuration
+dev:
+  ext-authz-router:
+    imageSelector: ${REGISTRY}/${IMAGE_NAME}
+    devImage: ${DEV_REGISTRY}/${IMAGE_NAME}
+
+    env: {}
+
+    resources:
+      requests:
+        cpu: 1000m
+        memory: 1024Mi
+
+    # Patch Kubernetes resources last-mile
+    patches:
+      # Override security context for development
+      - op: add
+        path: spec.containers[*].securityContext.allowPrivilegeEscalation
+        value: true
+
+    # Sync local files to container
+    sync:
+      - path: ./
+        startContainer: true
+        excludeFile: .gitignore
+      - path: "${DEVSPACE_USER_HOME}/.gitconfig:${CONTAINER_USER_HOME}/.gitconfig"
+        file: true
+        disableDownload: true
+
+    # Port forwarding for development
+    ports:
+      - port: "3000" # API service
+
+    persistPaths:
+    - path: /go-cache
+      # Optional path on the persistent volume to mount
+      # volumePath: my-volume/app
+
+    ssh:
+      localHostname: ext-authz-router.devspace
+
+    proxyCommands:
+      - gitCredentials: true
+      - command: kubectl
+
+    workingDir: /workspace
+
+    terminal:
+      command: bash .devcontainer/start.sh
+
+    command: ["/entrypoint.sh"]
+    args: ["air"]
+
+    restartHelper:
+      inject: true
+
+pipelines:
+  # Pipeline for development
+  dev:
+    flags:
+    - name: logs
+      short: l
+    - name: vscode
+    run: |-
+      LOGS_ENABLED=false
+      TERMINAL_ENABLED=true
+      if [ $(get_flag "logs") == "true" ]; then
+        LOGS_ENABLED=true
+        TERMINAL_ENABLED=false
+      fi
+
+      run_dependencies --all
+      ensure_pull_secrets --all
+      build_images --all --except prod
+      create_deployments --all
+      start_dev --all --set "terminal.enabled=$TERMINAL_ENABLED" --set "logs.enabled=$LOGS_ENABLED"
+      if [ $(get_flag "vscode") == "true" ]; then
+        code --folder-uri vscode-remote://ssh-remote+ext-authz-router.devspace/workspace
+      fi
+
+  # Pipeline for regular deployment
+  deploy: |
+    run_dependencies --all
+    ensure_pull_secrets --all
+    build_images --all --except dev
+    create_deployments --all
+
+commands:
+  # sections:
+  #   build:
+  #     Commands that can be executed in a dev container
+  #   images:
+  #     Commands related to building and pushing Docker images
+  #   deploy:
+  #     Commands related to deploying the service to Kubernetes
+  setup:
+    description: "Setup the development environment"
+    section: build
+    command: |
+      echo "I: target=setup"
+      go install github.com/go-delve/delve/cmd/dlv@v1.25.0
+      go install github.com/air-verse/air@v1.62.0
+
+  generate:
+    description: "Generate required code and download dependencies"
+    section: build
+    command: |
+      echo "I: target=generate"
+      go generate -x ./...
+      go mod download
+
+  compile:
+    description: "Compile the code base"
+    section: build
+    command: |
+      echo "I: target=compile"
+      devspace run generate $@
+      go build -v ./cmd/...
+
+  test:
+    description: "Run all tests"
+    section: build
+    command: |
+      echo "I: target=test"
+      devspace run build $@
+      go test -v ./...
+
+  start:
+    description: "Start the application"
+    section: build
+    command: |
+      echo "I: target=start"
+      if ! pgrep air >/dev/null; then
+        go run ./cmd/ext-authz-router-service $@
+      else
+        echo "I: using air, nothing to do here"
+      fi
+
+  build-images:
+    description: "Build Docker images for development and production environments"
+    section: images
+    command: |
+      devspace build $@
+
+  deploy:
+    description: "Deploy the service to Kubernetes"
+    section: deploy
+    command: |
+      devspace deploy $@
+
+  dev:
+    description: "Start development environment"
+    section: deploy
+    command: |
+      devspace dev $@
+
+  helm:
+    description: "Run Helm commands"
+    section: deploy
+    command: |
+      helm $@
+
+  k:
+    description: "Run kubectl commands"
+    section: deploy
+    command: |
+      kubectl $@
+
+  k9s:
+    description: "Run k9s, the Kubernetes terminal UI"
+    section: deploy
+    command: |
+      k9s $@
+
+  logs:
+    description: "View logs from the deployed service pods"
+    section: deploy
+    command: |
+      devspace logs $@
