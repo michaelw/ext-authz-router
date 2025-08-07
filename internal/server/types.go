@@ -1,18 +1,26 @@
 package server
 
 import (
+	"sync"
+
 	"github.com/getkin/kin-openapi/openapi3"
 
 	"github.com/michaelw/ext-authz-router/api"
 )
 
-var _ api.StrictServerInterface = (*TenantHandler)(nil)
+var _ api.StrictServerInterface = (*AuthzHandler)(nil)
 
-type TenantHandler struct {
-	PublicURL string
-	Swagger   *openapi3.T
-	// Add any dependencies or configuration needed for the handler
+type AuthzConfig struct {
+	Namespaces map[string]struct {
+		Target      string `yaml:"target" json:"target"`
+		Description string `yaml:"description,omitempty" json:"description,omitempty"`
+	} `yaml:"namespaces" json:"namespaces"`
+}
 
-	// Embed Unimplemented to provide default implementations
-	api.Unimplemented
+type AuthzHandler struct {
+	PublicURL     string
+	Swagger       *openapi3.T
+	configLock    sync.RWMutex
+	currentConfig AuthzConfig
+	configPath    string
 }

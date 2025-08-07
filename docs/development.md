@@ -36,19 +36,11 @@ Follow these phases when implementing new features:
 
 ## 🐳 Development Environment
 
-### Docker Compose Setup
-
-* Provide a Docker Compose setup for running the service and dependencies
-* Provide a `.devcontainer` config using Docker Compose for VS Code users
-* Enable **live reload** via [`air`](https://github.com/cosmtrek/air)
-  * Service should auto-rebuild on file changes
-* Service must be runnable via `docker compose up` without extra setup
-
 ### Local Development
 
 1. Start the development environment:
    ```bash
-   docker compose up
+   devspace dev
    ```
 
 2. The service will automatically reload on file changes thanks to `air`.

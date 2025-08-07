@@ -1,4 +1,15 @@
+config:
+  namespaces:
+    awesome-penguin:
+      target: red
+    cool-otter:
+      target: blue
+    golden-retriever:
+      target: yellow
+
 api-service:
+  annotations:
+    eloader.stakater.com/auto: "true"
   containers:
     - name: ext-authz-router-service
       image: ghcr.io/michaelw/ext-authz-router-api
@@ -7,11 +18,15 @@ api-service:
       env:
         - name: PORT
           value: "3000"
+        - name: GRPC_PORT
+          value: "3001"
         - name: URLS_SELF_PUBLIC
-          value: "http://ext-authz-router:3000"
+          value: "http://namespaces.int.kube/"
       ports:
         - name: api
           containerPort: 3000
+        - name: grpc-authz
+          containerPort: 3001
       readinessProbe:
         httpGet:
           path: /readyz
@@ -41,16 +56,25 @@ api-service:
           cpu: 1000m
           memory: 1024Mi
       volumeMounts:
-        - containerPath: /tmp
+        - containerPath: /app/config/
           volume:
-            name: tmp-dir
-            volumeMode: "01777"
+            name: config
   volumes:
     - name: tmp-dir
       emptyDir: {}
+    - name: config
+      configMap:
+        name: ext-authz-router-config
   service:
+    type: LoadBalancer
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: "namespaces.int.kube"
     ports:
       - name: http-api
-        port: 3000
+        port: 80
         containerPort: api
         appProtocol: http
+      - name: grpc-api
+        port: 3001
+        containerPort: grpc-authz
+        appProtocol: grpc

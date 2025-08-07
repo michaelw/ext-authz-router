@@ -12,7 +12,7 @@ type GetHealthzResponse struct {
 }
 
 // GetHealthzHandler handles the health check endpoint
-func (h *TenantHandler) GetHealthzHandler(c *gin.Context) {
+func (h *AuthzHandler) GetHealthzHandler(c *gin.Context) {
 	response := GetHealthzResponse{
 		Status: "UP",
 	}
@@ -20,7 +20,7 @@ func (h *TenantHandler) GetHealthzHandler(c *gin.Context) {
 }
 
 // GetOpenAPIJSONHandler serves the OpenAPI specification as JSON
-func (h *TenantHandler) GetOpenAPIJSONHandler(c *gin.Context) {
+func (h *AuthzHandler) GetOpenAPIJSONHandler(c *gin.Context) {
 	if h.Swagger == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "OpenAPI spec not available"})
 		return
@@ -30,7 +30,7 @@ func (h *TenantHandler) GetOpenAPIJSONHandler(c *gin.Context) {
 }
 
 // RegisterRoutes registers internal server routes
-func (h *TenantHandler) RegisterRoutes(router gin.IRouter) {
+func (h *AuthzHandler) RegisterRoutes(router gin.IRouter) {
 	router.GET("/ready", h.GetHealthzHandler)    // ready to serve requests
 	router.GET("/readyz", h.GetHealthzHandler)   // alias
 	router.GET("/health", h.GetHealthzHandler)   // live, but may not be ready

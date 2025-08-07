@@ -4,3 +4,129 @@ info:
   title: "Ext AuthZ Routing Plugin"
   version: 0.1.0
   description: "Envoy Ext AuthZ Plugin for header-based routing to environments"
+
+components:
+  schemas:
+    RedirectResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Redirecting..."
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+    NamespaceSelection:
+      type: object
+      properties:
+        value:
+          type: string
+          description: The selected namespace value
+          example: "development"
+      required:
+        - value
+    NamespaceList:
+      type: object
+      properties:
+        namespaces:
+          type: object
+          description: Map of namespace IDs to their attributes
+          additionalProperties:
+            $ref: '#/components/schemas/NamespaceAttributes'
+          example:
+            blue:
+              description: "Blue Namespace"
+            green:
+              description: "Green Namespace"
+      required:
+        - namespaces
+    NamespaceAttributes:
+      type: object
+      properties:
+        description:
+          type: string
+          description: Human-readable description of the namespace
+          example: "Blue Namespace"
+
+paths:
+  /:
+    get:
+      summary: Namespace selection UI
+      description: Renders an HTML form for selecting a namespace.
+      parameters:
+        - name: redirect_to
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Optional redirect URL after selection
+      responses:
+        '200':
+          description: HTML form for namespace selection
+          content:
+            text/html:
+              schema:
+                type: string
+                description: HTML page with namespace selection form
+  /namespaces:
+    get:
+      summary: Get available namespaces
+      description: Returns a JSON list of available namespaces for selection
+      responses:
+        '200':
+          description: List of available namespaces
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NamespaceList'
+  /submit:
+    post:
+      summary: Set namespace cookie
+      description: Sets the namespace cookie and redirects to requested URL. Returns 400 Bad Request if namespace is unknown.
+      parameters:
+        - name: redirect_to
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Optional redirect URL after selection
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NamespaceSelection'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NamespaceSelection'
+      responses:
+        '302':
+          description: Redirect to root after successfully setting namespace cookie
+          headers:
+            Location:
+              schema:
+                type: string
+                example: "/"
+              description: Redirect location
+            Set-Cookie:
+              schema:
+                type: string
+                example: "namespace=development; Path=/; Expires=Wed, 08 Aug 2025 12:00:00 GMT; HttpOnly"
+              description: Sets the namespace cookie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedirectResponse'
+        '400':
+          description: Bad Request - unknown or invalid namespace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "bad_request"
+                message: "Unknown namespace"

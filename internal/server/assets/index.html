@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Namespace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #2d3748;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            color: #2d3748;
+            transition: border-color 0.2s;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            margin-top: 1rem;
+            color: #666;
+        }
+
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Select your Namespace</h1>
+        <div class="error" id="error"></div>
+        <form id="namespaceForm">
+            <div class="form-group">
+                <select id="namespaceSelect" required>
+                    <option value="">Loading...</option>
+                </select>
+            </div>
+            <button type="submit" id="submitBtn" disabled>Continue</button>
+        </form>
+        <div class="loading" id="loading">Setting up your environment...</div>
+    </div>
+
+    <script>
+        const redirectTo = new URLSearchParams(window.location.search).get('redirect_to') || '/';
+
+        async function loadNamespaces() {
+            try {
+                const response = await fetch('/namespaces');
+                if (!response.ok) throw new Error('Failed to load namespaces');
+
+                const data = await response.json();
+                const select = document.getElementById('namespaceSelect');
+                const submitBtn = document.getElementById('submitBtn');
+
+                select.innerHTML = '<option value="">Select a namespace...</option>';
+
+                Object.entries(data.namespaces).forEach(([key, value]) => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = key;
+                    select.appendChild(option);
+                });
+
+                submitBtn.disabled = false;
+            } catch (error) {
+                showError('Failed to load namespaces. Please refresh the page.');
+                console.error('Error loading namespaces:', error);
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+
+        document.getElementById('namespaceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideError();
+
+            const select = document.getElementById('namespaceSelect');
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+
+            if (!select.value) {
+                showError('Please select a namespace');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+
+            // Create a form and submit it traditionally to let browser handle redirects
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/submit?redirect_to=${encodeURIComponent(redirectTo)}`;
+
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'value';
+            input.value = select.value;
+
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+        });
+
+        // Load namespaces on page load
+        loadNamespaces();
+    </script>
+</body>
+</html>
