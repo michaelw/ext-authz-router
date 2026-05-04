@@ -145,7 +145,6 @@ dev:
     sync:
       - path: ./
         startContainer: true
-        excludeFile: .gitignore
       - path: "${DEVSPACE_USER_HOME}/.gitconfig:${CONTAINER_USER_HOME}/.gitconfig"
         file: true
         disableDownload: true
@@ -161,13 +160,13 @@ dev:
       # volumePath: my-volume/app
 
     ssh:
-      localHostname: ext-authz-router.devspace
+      localHostname: ${DEVSPACE_NAME}.devspace
 
     proxyCommands:
       - gitCredentials: true
       - command: kubectl
 
-    workingDir: /workspaces/ext-authz-router
+    workingDir: /workspaces/${DEVSPACE_NAME}
 
     terminal:
       command: bash .devcontainer/start.sh
@@ -199,7 +198,7 @@ pipelines:
       create_deployments --all
       start_dev --all --set "terminal.enabled=$TERMINAL_ENABLED" --set "logs.enabled=$LOGS_ENABLED"
       if [ $(get_flag "vscode") == "true" ]; then
-        code --folder-uri vscode-remote://ssh-remote+ext-authz-router.devspace/workspaces/ext-authz-router
+        code --folder-uri vscode-remote://ssh-remote+${DEVSPACE_NAME}.devspace/workspaces/${DEVSPACE_NAME}
       fi
 
   # Pipeline for regular deployment
